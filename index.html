@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Parc de démo</title>
+<style>
+  :root {
+    --paper: #EEEBE3;
+    --paper-deep: #E4E0D5;
+    --ink: #242721;
+    --ink-soft: #5B5D53;
+    --line: #D6D1C3;
+    --card: #FBFAF7;
+    --stock: #4B6C50;
+    --stock-bg: #E4EBE2;
+    --deployed: #B8863B;
+    --deployed-bg: #F3E8D3;
+    --alert: #A6493A;
+    --alert-bg: #F2DCD6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  h1, h2, .heading { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 700; margin: 0; }
+  button, input, textarea, a, select { font-family: inherit; font-size: inherit; }
+  input, textarea, select { outline: none; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 10px 12px; width: 100%; }
+  input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 2px rgba(36,39,33,0.15); }
+  button { cursor: pointer; border: none; background: none; }
+  a { text-decoration: none; }
+  .header { position: sticky; top: 0; z-index: 10; background: var(--paper); padding: 20px 16px 14px; border-bottom: 1px solid var(--line); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .btn-primary { background: var(--ink); color: var(--paper); padding: 9px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-outline { border: 1px solid var(--line); padding: 9px 12px; border-radius: 8px; font-size: 14px; }
+  .btn-block { width: 100%; padding: 13px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .stats { display: flex; gap: 10px; margin-bottom: 12px; }
+  .stat { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .stat b { font-size: 20px; display: block; }
+  .stat span { font-size: 11px; color: var(--ink-soft); }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
+  .search input { border: none; background: transparent; padding: 0; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-pill { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); }
+  .filter-pill.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .tab-btn { flex: 1; text-align: center; padding: 8px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .tab-btn.active { background: var(--ink); color: var(--paper); }
+  .list { padding: 14px 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; text-align: left; }
+  .card-photo { aspect-ratio: 1; background: var(--paper-deep); display: flex; align-items: center; justify-content: center; }
+  .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-body { padding: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-ref { font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; display: inline-flex; align-items: center; gap: 3px; }
+  .badge-stock { background: var(--stock-bg); color: var(--stock); }
+  .badge-deployed { background: var(--deployed-bg); color: var(--deployed); }
+  .badge-alert { background: var(--alert-bg); color: var(--alert); }
+  .badge-future { background: var(--paper-deep); color: var(--ink-soft); }
+  .card-meta { margin-top: 6px; font-size: 11px; color: var(--ink-soft); }
+  .card-meta.overdue { color: var(--alert); font-weight: 600; }
+  .quick-btn { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; font-size: 12px; font-weight: 600; color: #fff; }
+  .empty { text-align: center; padding: 60px 20px; color: var(--ink-soft); }
+  .overlay { position: fixed; inset: 0; background: var(--paper); z-index: 40; display: flex; flex-direction: column; }
+  .overlay-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--line); background: var(--paper); position: sticky; top: 0; }
+  .overlay-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .overlay-footer { padding: 16px; border-top: 1px solid var(--line); }
+  .back-btn { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 14px; padding: 4px; margin: -4px; }
+  .icon-btn { padding: 8px; }
+  .photo-hero { width: 100%; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: var(--paper-deep); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .photo-hero img { width: 100%; height: 100%; object-fit: cover; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .field label { font-size: 11px; color: var(--ink-soft); display: block; margin-bottom: 2px; }
+  .field .val { font-size: 14px; }
+  .form-field { margin-bottom: 12px; }
+  .form-field label { font-size: 12px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .photo-picker { width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 1px dashed var(--line); background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--ink-soft); font-size: 13px; margin-bottom: 14px; overflow: hidden; }
+  .photo-picker img { width: 100%; height: 100%; object-fit: cover; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 18px; }
+  .panel.deposit-done { background: var(--stock-bg); border-color: var(--stock); }
+  .panel.conflict { background: var(--alert-bg); border-color: var(--alert); color: var(--alert); }
+  .panel-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .actions-row { display: flex; gap: 8px; }
+  .actions-row > * { flex: 1; }
+  .history-item { display: flex; gap: 10px; align-items: center; padding: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+  .history-item .h-name { font-weight: 600; font-size: 13px; }
+  .history-item .h-dates { font-size: 11px; color: var(--ink-soft); }
+  .warn-banner { font-size: 12px; background: var(--alert-bg); color: var(--alert); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 60; max-width: 90vw; text-align: center; }
+  .toast.error { background: var(--alert-bg); color: var(--alert); }
+  .hidden-input { display: none; }
+  .resv-row { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+  .resv-thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--paper-deep); flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .resv-thumb img { width: 100%; height: 100%; object-fit: cover; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+window.onerror = function (msg, url, line, col, err) {
+  try {
+    document.getElementById("app").innerHTML =
+      '<div style="padding:24px;font-family:sans-serif"><p style="font-weight:600;margin-bottom:8px">Une erreur a empêché l\'affichage</p><p style="font-size:13px;color:#5B5D53">' +
+      String(msg) + " (ligne " + line + ")</p></div>";
+  } catch (e) {}
+  return false;
+};
+
+/* ---------- Stockage : localStorage (synchrone, fiable même en fichier local) ---------- */
+const STORAGE_KEY = "parcDemoItems_v2";
+const OLD_STORAGE_KEY = "parcDemoItems_v1";
+
+function loadItemsSync() {
+  try {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    // migration depuis l'ancienne version si elle existe
+    raw = localStorage.getItem(OLD_STORAGE_KEY);
+    if (raw) {
+      const migrated = JSON.parse(raw).map(migrateItem);
+      persistItemsSync(migrated);
+      return migrated;
+    }
+    return [];
+  } catch (e) { return []; }
+}
+function persistItemsSync(items) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); return true; }
+  catch (e) { return false; }
+}
+function dbGetAll() { return loadItemsSync(); }
+function dbPut(record) {
+  const current = loadItemsSync();
+  const idx = current.findIndex((x) => x.id === record.id);
+  if (idx >= 0) current[idx] = record; else current.unshift(record);
+  const ok = persistItemsSync(current);
+  if (!ok) notify("Espace de stockage insuffisant : la sauvegarde locale a échoué. Pense à exporter une sauvegarde.", "error");
+  return record;
+}
+function dbDelete(id) {
+  const current = loadItemsSync().filter((x) => x.id !== id);
+  persistItemsSync(current);
+}
+
+/* ---------- Migration ancien format -> réservations ---------- */
+function migrateItem(it) {
+  if (it.reservations) return it;
+  const reservations = [];
+  (it.history || []).forEach((h) => {
+    reservations.push({
+      id: newId(), store: h.store, storeEmail: h.storeEmail || null,
+      startDate: h.dropDate, endDate: h.expectedReturnDate || h.dropDate,
+      pickupDate: h.pickupDate || null, calendarEventId: null,
+    });
+  });
+  if (it.status === "deployed" && it.currentStore && !reservations.some((r) => !r.pickupDate)) {
+    reservations.push({
+      id: newId(), store: it.currentStore, storeEmail: it.currentStoreEmail || null,
+      startDate: it.currentStoreSince || todayStr(), endDate: it.currentExpectedReturn || null,
+      pickupDate: null, calendarEventId: null,
+    });
+  }
+  it.reservations = reservations;
+  delete it.history; delete it.status; delete it.currentStore; delete it.currentStoreEmail;
+  delete it.currentStoreSince; delete it.currentExpectedReturn;
+  return it;
+}
+
+/* ---------- Utilitaires ---------- */
+function esc(s) { return (s == null ? "" : String(s)).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function addDays(dateStr, n) { const d = new Date(dateStr); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function fmtDate(d) { if (!d) return "—"; return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }); }
+function daysSince(d) { if (!d) return 0; return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86400000)); }
+function newId() { return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ---------- Réservations : dérivation & conflits ---------- */
+function activeReservation(it) {
+  const t = todayStr();
+  return (it.reservations || []).find((r) => !r.pickupDate && r.startDate <= t) || null;
+}
+function upcomingReservations(it) {
+  const t = todayStr();
+  return (it.reservations || []).filter((r) => !r.pickupDate && r.startDate > t).sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+function itemStatus(it) { return activeReservation(it) ? "deployed" : "stock"; }
+function itemOverdue(it) { const r = activeReservation(it); return !!(r && r.endDate && todayStr() > r.endDate); }
+function findConflict(it, start, end, excludeId) {
+  const e = end || start;
+  return (it.reservations || []).find((r) => !r.pickupDate && r.id !== excludeId && start <= (r.endDate || r.startDate) && r.startDate <= e) || null;
+}
+function allOpenReservations() {
+  const out = [];
+  state.items.forEach((it) => (it.reservations || []).forEach((r) => { if (!r.pickupDate) out.push({ item: it, r: r }); }));
+  out.sort((a, b) => a.r.startDate.localeCompare(b.r.startDate));
+  return out;
+}
+
+function resizeImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) { if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; } }
+        else { if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; } }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildMailto(item, r) {
+  const subject = "Mise à disposition – " + item.name;
+  const lines = [
+    "Bonjour,", "",
+    "Nous mettons à votre disposition l'article suivant :",
+    "- Article : " + item.name,
+    item.reference ? "- Référence : " + item.reference : null,
+    item.color ? "- Couleur : " + item.color : null,
+    (item.width || item.depth) ? "- Dimensions : largeur d'assise " + (item.width || "?") + " cm, profondeur " + (item.depth || "?") + " cm" : null,
+    "- Date de mise à disposition : " + fmtDate(r.startDate),
+    r.endDate ? "- Date de reprise prévue : " + fmtDate(r.endDate) : null,
+    "", "Merci de trouver la photo de l'article en pièce jointe (à ajouter manuellement).", "",
+    "Cordialement",
+  ].filter(Boolean).join("\n");
+  return "mailto:" + (r.storeEmail || "").trim() + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(lines);
+}
+
+/* ---------- Google Agenda : lien "Ajouter à Google Agenda" (aucune configuration nécessaire) ---------- */
+function buildEventDescription(item, r) {
+  return [
+    "Référence : " + (item.reference || "-"),
+    "Couleur : " + (item.color || "-"),
+    "Dimensions : " + (item.width || "?") + " x " + (item.depth || "?") + " cm",
+    r.storeEmail ? "Contact magasin : " + r.storeEmail : null,
+  ].filter(Boolean).join("\n");
+}
+function buildGoogleCalendarLink(item, r) {
+  const start = (r.startDate || todayStr()).replace(/-/g, "");
+  const endExclusive = addDays(r.endDate || r.startDate, 1).replace(/-/g, "");
+  const text = encodeURIComponent("Dépôt – " + item.name + " @ " + r.store);
+  const details = encodeURIComponent(buildEventDescription(item, r));
+  const location = encodeURIComponent(r.store);
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + text + "&dates=" + start + "/" + endExclusive + "&details=" + details + "&location=" + location;
+}
+
+/* ---------- État ---------- */
+const state = {
+  ready: false,
+  items: [],
+  query: "",
+  statusFilter: "all",
+  view: "parc",
+  detailId: null,
+  showForm: false,
+  editingId: null,
+  draftPhotoThumb: null,
+  draftPhotoFull: null,
+  actionMode: null,
+  pendingId: null,
+  toast: null,
+  showReserveForm: false,
+};
+
+function notify(msg, type) {
+  state.toast = { msg, type: type || "ok" };
+  render();
+  setTimeout(() => { state.toast = null; render(); }, 2800);
+}
+
+function loadAll() {
+  state.items = loadItemsSync().map(migrateItem);
+  state.ready = true;
+  render();
+}
+
+/* ---------- Actions : ajout / édition ---------- */
+function openAddForm() { state.editingId = null; state.draftPhotoThumb = null; state.draftPhotoFull = null; state.showForm = true; render(); }
+function openEditForm(id) {
+  const it = state.items.find((x) => x.id === id);
+  if (!it) return;
+  state.editingId = id; state.draftPhotoThumb = it.photoThumb || null; state.draftPhotoFull = it.photoFull || null;
+  state.showForm = true; render();
+}
+function closeForm() { state.showForm = false; render(); }
+
+async function handlePhotoChange(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  try {
+    const [full, thumb] = await Promise.all([resizeImage(file, 700, 0.6), resizeImage(file, 140, 0.5)]);
+    state.draftPhotoFull = full; state.draftPhotoThumb = thumb;
+    const preview = document.getElementById("photo-preview");
+    if (preview) preview.innerHTML = '<img src="' + thumb + '">';
+  } catch (e) { notify("Impossible de lire cette photo.", "error"); }
+}
+
+async function submitForm() {
+  const name = document.getElementById("f-name").value.trim();
+  if (!name) { notify("Donne un nom à l'appareil.", "error"); return; }
+  const draft = {
+    name,
+    reference: document.getElementById("f-reference").value.trim(),
+    color: document.getElementById("f-color").value.trim(),
+    width: document.getElementById("f-width").value.trim(),
+    depth: document.getElementById("f-depth").value.trim(),
+    notes: document.getElementById("f-notes").value.trim(),
+    photoThumb: state.draftPhotoThumb, photoFull: state.draftPhotoFull,
+  };
+  if (state.editingId) {
+    const existing = state.items.find((x) => x.id === state.editingId);
+    const updated = Object.assign({}, existing, draft, { id: state.editingId });
+    dbPut(updated);
+    state.items = state.items.map((x) => (x.id === state.editingId ? updated : x));
+    notify("Appareil mis à jour.");
+  } else {
+    const record = Object.assign({ id: newId(), reservations: [] }, draft);
+    dbPut(record);
+    state.items = [record, ...state.items];
+    notify("Appareil ajouté.");
+  }
+  state.showForm = false;
+  render();
+}
+
+function handleDelete(id) {
+  dbDelete(id);
+  state.items = state.items.filter((x) => x.id !== id);
+  state.detailId = null;
+  render();
+  notify("Appareil supprimé.");
+}
+
+/* ---------- Détail / réservations ---------- */
+function openDetail(id) { state.detailId = id; state.actionMode = null; render(); }
+function closeDetail() { state.detailId = null; state.actionMode = null; render(); }
+
+function startAction(mode) {
+  state.actionMode = mode;
+  render();
+  if (mode === "deposit-now" || mode === "reserve-future") {
+    document.getElementById("d-startdate").value = mode === "deposit-now" ? todayStr() : addDays(todayStr(), 7);
+    document.getElementById("d-expected").value = addDays(document.getElementById("d-startdate").value, 30);
+  } else if (mode === "pickup") {
+    document.getElementById("p-date").value = todayStr();
+  }
+}
+function cancelAction() { state.actionMode = null; render(); }
+
+async function confirmReservation() {
+  const store = document.getElementById("d-store").value.trim();
+  if (!store) { notify("Indique le magasin.", "error"); return; }
+  const email = document.getElementById("d-email").value.trim();
+  const start = document.getElementById("d-startdate").value || todayStr();
+  const end = document.getElementById("d-expected").value || null;
+  const it = state.items.find((x) => x.id === state.detailId);
+  const conflict = findConflict(it, start, end);
+  if (conflict) {
+    notify("Conflit : déjà réservé chez " + conflict.store + " du " + fmtDate(conflict.startDate) + " au " + fmtDate(conflict.endDate) + ".", "error");
+    return;
+  }
+  const r = { id: newId(), store, storeEmail: email || null, startDate: start, endDate: end, pickupDate: null, calendarEventId: null };
+  const updated = Object.assign({}, it, { reservations: (it.reservations || []).concat([r]) });
+  dbPut(updated);
+  state.items = state.items.map((x) => (x.id === it.id ? updated : x));
+  state.actionMode = "deposit-done";
+  state._lastReservationId = r.id;
+  render();
+  notify(start <= todayStr() ? "Dépôt enregistré." : "Réservation enregistrée.");
+}
+
+async function confirmPickup() {
+  const date = document.getElementById("p-date").value || todayStr();
+  const it = state.items.find((x) => x.id === state.detailId);
+  const active = activeReservation(it);
+  if (!active) { state.actionMode = null; render(); return; }
+  const reservations = (it.reservations || []).map((r) => (r.id === active.id ? Object.assign({}, r, { pickupDate: date }) : r));
+  const updated = Object.assign({}, it, { reservations });
+  dbPut(updated);
+  state.items = state.items.map((x) => (x.id === it.id ? updated : x));
+  state.detailId = null; state.actionMode = null;
+  render();
+  notify("Récupération enregistrée.");
+}
+
+function quickPickup(id, ev) {
+  if (ev) ev.stopPropagation();
+  if (state.pendingId === id) return;
+  state.pendingId = id; render();
+  const it = state.items.find((x) => x.id === id);
+  const active = activeReservation(it);
+  if (!active) { state.pendingId = null; render(); return; }
+  const reservations = (it.reservations || []).map((r) => (r.id === active.id ? Object.assign({}, r, { pickupDate: todayStr() }) : r));
+  const updated = Object.assign({}, it, { reservations });
+  dbPut(updated);
+  state.items = state.items.map((x) => (x.id === id ? updated : x));
+  state.pendingId = null;
+  render();
+  notify(it.name + " repris en stock.");
+}
+
+async function cancelReservation(itemId, resvId) {
+  const it = state.items.find((x) => x.id === itemId);
+  if (!it) return;
+  const target = (it.reservations || []).find((r) => r.id === resvId);
+  const updated = Object.assign({}, it, { reservations: (it.reservations || []).filter((r) => r.id !== resvId) });
+  dbPut(updated);
+  state.items = state.items.map((x) => (x.id === itemId ? updated : x));
+  render();
+  notify("Réservation annulée.");
+}
+
+/* ---------- Nouvelle réservation depuis l'onglet Réservations ---------- */
+function openReserveForm() { state.showReserveForm = true; render(); document.getElementById("r-startdate").value = todayStr(); document.getElementById("r-expected").value = addDays(todayStr(), 30); }
+function closeReserveForm() { state.showReserveForm = false; render(); }
+async function submitReserveForm() {
+  const itemId = document.getElementById("r-item").value;
+  const it = state.items.find((x) => x.id === itemId);
+  if (!it) { notify("Choisis un appareil.", "error"); return; }
+  const store = document.getElementById("r-store").value.trim();
+  if (!store) { notify("Indique le magasin.", "error"); return; }
+  const email = document.getElementById("r-email").value.trim();
+  const start = document.getElementById("r-startdate").value || todayStr();
+  const end = document.getElementById("r-expected").value || null;
+  const conflict = findConflict(it, start, end);
+  if (conflict) {
+    notify("Conflit sur " + it.name + " : déjà réservé chez " + conflict.store + " du " + fmtDate(conflict.startDate) + " au " + fmtDate(conflict.endDate) + ".", "error");
+    return;
+  }
+  const r = { id: newId(), store, storeEmail: email || null, startDate: start, endDate: end, pickupDate: null, calendarEventId: null };
+  const updated = Object.assign({}, it, { reservations: (it.reservations || []).concat([r]) });
+  dbPut(updated);
+  state.items = state.items.map((x) => (x.id === it.id ? updated : x));
+  state.showReserveForm = false;
+  render();
+  notify("Réservation enregistrée pour " + it.name + ".");
+}
+
+/* ---------- Recherche / filtres ---------- */
+function setFilter(val) { state.statusFilter = val; render(); }
+function setView(v) { state.view = v; render(); }
+function onSearchInput(val) {
+  state.query = val;
+  const grid = document.getElementById("grid-container");
+  if (grid) grid.outerHTML = renderGrid();
+}
+
+function filteredItems() {
+  return state.items.filter((it) => {
+    if (state.statusFilter !== "all" && itemStatus(it) !== state.statusFilter) return false;
+    if (!state.query.trim()) return true;
+    const q = state.query.toLowerCase();
+    const active = activeReservation(it);
+    return (it.name || "").toLowerCase().includes(q) || (it.reference || "").toLowerCase().includes(q) || (active && (active.store || "").toLowerCase().includes(q));
+  });
+}
+
+/* ---------- Rendu ---------- */
+function icon(name, size, color) {
+  size = size || 16; color = color || "currentColor";
+  const paths = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>',
+    pin: '<path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/>',
+    swap: '<path d="M7 4v10M7 4L3 8M7 4l4 4"/><path d="M17 20V10M17 20l4-4M17 20l-4-4"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    warn: '<path d="M12 3l10 18H2Z"/><path d="M12 9v5"/><path d="M12 17h.01"/>',
+    box: '<path d="M21 8l-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+    check: '<path d="M20 6L9 17l-5-5"/>',
+    rotate: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+    dl: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+    up: '<path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    camera: '<path d="M4 8h3l2-2h6l2 2h3v11H4Z"/><circle cx="12" cy="13.5" r="3.5"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+    x: '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>',
+  };
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || "") + "</svg>";
+}
+
+function renderCard(it) {
+  const active = activeReservation(it);
+  const deployed = !!active;
+  const overdue = itemOverdue(it);
+  const upcoming = upcomingReservations(it);
+  let meta = "";
+  if (deployed) {
+    meta = '<div class="card-meta' + (overdue ? " overdue" : "") + '">' +
+      '<div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + icon("pin", 10) + esc(active.store) + "</div>" +
+      (active.endDate
+        ? "<div>" + (overdue ? "Reprise dépassée (" + daysSince(active.endDate) + " j)" : "Reprise prévue le " + fmtDate(active.endDate)) + "</div>"
+        : "<div>" + daysSince(active.startDate) + " j</div>") +
+      "</div>";
+  } else if (upcoming.length > 0) {
+    meta = '<div class="card-meta">Réservé à partir du ' + fmtDate(upcoming[0].startDate) + "</div>";
+  }
+  return '<button class="card" onclick="openDetail(\'' + it.id + '\')">' +
+    '<div class="card-photo">' + (it.photoThumb ? '<img src="' + it.photoThumb + '">' : icon("box", 26, "#5B5D53")) + "</div>" +
+    '<div class="card-body">' +
+      '<div class="card-title">' + esc(it.name) + "</div>" +
+      (it.reference ? '<div class="card-ref mono">' + esc(it.reference) + "</div>" : "") +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap">' +
+        '<span class="badge ' + (deployed ? "badge-deployed" : "badge-stock") + '">' + (deployed ? "En dépôt" : "En stock") + "</span>" +
+        (overdue ? '<span class="badge badge-alert">' + icon("warn", 10) + " Retard</span>" : "") +
+        (!deployed && upcoming.length > 0 ? '<span class="badge badge-future">Réservé</span>' : "") +
+      "</div>" + meta +
+    "</div>" +
+    (deployed ? '<div class="quick-btn" style="background:' + (overdue ? "var(--alert)" : "var(--stock)") + '" onclick="quickPickup(\'' + it.id + '\', event)">' + icon("rotate", 13, "#fff") + (state.pendingId === it.id ? "…" : "Reprise") + "</div>" : "") +
+    "</button>";
+}
+
+function renderGrid() {
+  const items = filteredItems();
+  let inner;
+  if (state.items.length === 0) {
+    inner = '<div class="empty">' + icon("box", 30, "#5B5D53") + '<p class="heading" style="font-size:16px;margin:10px 0 4px">Aucun appareil pour l\'instant</p><p style="font-size:13px;margin-bottom:14px">Ajoute ton premier appareil de démo.</p><button class="btn-primary" onclick="openAddForm()">Ajouter un appareil</button></div>';
+  } else if (items.length === 0) {
+    inner = '<div class="empty">Aucun résultat pour ces critères.</div>';
+  } else {
+    inner = '<div class="grid">' + items.map(renderCard).join("") + "</div>";
+  }
+  return '<div id="grid-container">' + inner + "</div>";
+}
+
+function renderReservationsTab() {
+  const rows = allOpenReservations();
+  const t = todayStr();
+  let list;
+  if (rows.length === 0) {
+    list = '<div class="empty">' + icon("calendar", 30, "#5B5D53") + '<p class="heading" style="font-size:16px;margin:10px 0 4px">Aucune réservation</p><p style="font-size:13px">Planifie une future mise à disposition.</p></div>';
+  } else {
+    list = rows.map(({ item, r }) => {
+      const started = r.startDate <= t;
+      const overdue = started && r.endDate && t > r.endDate;
+      return '<div class="resv-row">' +
+        '<div class="resv-thumb">' + (item.photoThumb ? '<img src="' + item.photoThumb + '">' : icon("box", 18, "#5B5D53")) + "</div>" +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(item.name) + "</div>" +
+          '<div style="font-size:11px;color:var(--ink-soft)">' + esc(r.store) + " · " + fmtDate(r.startDate) + " → " + (r.endDate ? fmtDate(r.endDate) : "?") + "</div>" +
+          '<span class="badge ' + (started ? (overdue ? "badge-alert" : "badge-deployed") : "badge-future") + '" style="margin-top:4px">' + (started ? (overdue ? "En retard" : "En cours") : "À venir") + "</span>" +
+        "</div>" +
+        (started
+          ? '<button class="icon-btn" onclick="quickPickup(\'' + item.id + '\', event)">' + icon("rotate", 16, "#4B6C50") + "</button>"
+          : '<button class="icon-btn" onclick="cancelReservation(\'' + item.id + "','" + r.id + '\')">' + icon("x", 16, "#A6493A") + "</button>") +
+        '<a class="icon-btn" target="_blank" href="' + esc(buildGoogleCalendarLink(item, r)) + '">' + icon("calendar", 16, "#5B5D53") + "</a>" +
+        "</div>";
+    }).join("");
+  }
+  return (
+    '<div class="list">' +
+      '<button class="btn-primary btn-block" style="margin-bottom:14px" onclick="openReserveForm()">' + icon("plus", 16, "#EEEBE3") + " Nouvelle réservation</button>" +
+      list +
+    "</div>"
+  );
+}
+
+function renderReserveForm() {
+  if (!state.showReserveForm) return "";
+  const options = state.items.map((it) => '<option value="' + it.id + '">' + esc(it.name) + "</option>").join("");
+  return (
+    '<div class="overlay" style="z-index:50">' +
+      '<div class="overlay-header"><button class="icon-btn" onclick="closeReserveForm()">' + icon("x", 18) + '</button><h2 class="heading" style="font-size:17px">Nouvelle réservation</h2></div>' +
+      '<div class="overlay-body">' +
+        '<div class="form-field"><label>Appareil</label><select id="r-item">' + options + "</select></div>" +
+        '<div class="form-field"><label>Magasin</label><input id="r-store" placeholder="Nom du magasin"></div>' +
+        '<div class="form-field"><label>Email du magasin (optionnel)</label><input id="r-email" type="email" placeholder="contact@magasin.fr"></div>' +
+        '<div class="form-field"><label>Date de début</label><input id="r-startdate" type="date"></div>' +
+        '<div class="form-field"><label>Date de fin prévue</label><input id="r-expected" type="date"></div>' +
+      "</div>" +
+      '<div class="overlay-footer"><button class="btn-primary btn-block" onclick="submitReserveForm()">' + icon("check", 16, "#EEEBE3") + " Réserver</button></div>" +
+    "</div>"
+  );
+}
+
+function renderHeader() {
+  return (
+    '<div class="header">' +
+      '<div class="row"><h1 style="font-size:22px">Parc de démo</h1>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="btn-outline" onclick="exportBackup()" title="Exporter">' + icon("dl", 16) + '</button>' +
+          '<button class="btn-outline" onclick="document.getElementById(\'import-input\').click()" title="Importer">' + icon("up", 16) + '</button>' +
+          '<input type="file" id="import-input" accept="application/json" class="hidden-input" onchange="importBackup(this)">' +
+          '<button class="btn-primary" onclick="openAddForm()">' + icon("plus", 16, "#EEEBE3") + " Ajouter</button>" +
+        "</div>" +
+      "</div>" +
+      '<div class="tabs">' +
+        '<button class="tab-btn' + (state.view === "parc" ? " active" : "") + '" onclick="setView(\'parc\')">Parc</button>' +
+        '<button class="tab-btn' + (state.view === "reservations" ? " active" : "") + '" onclick="setView(\'reservations\')">Réservations</button>' +
+      "</div>" +
+      (state.view === "parc" ? (
+      '<div class="stats">' +
+        '<div class="stat"><b class="mono" style="color:var(--stock)">' + state.items.filter((i) => itemStatus(i) === "stock").length + '</b><span>En stock</span></div>' +
+        '<div class="stat"><b class="mono" style="color:var(--deployed)">' + state.items.filter((i) => itemStatus(i) === "deployed").length + '</b><span>En dépôt</span></div>' +
+        '<div class="stat"><b class="mono">' + state.items.length + "</b><span>Total</span></div>" +
+      "</div>" +
+      '<div class="search">' + icon("search", 15, "#5B5D53") + '<input placeholder="Nom, référence, magasin…" value="' + esc(state.query) + '" oninput="onSearchInput(this.value)"></div>' +
+      '<div class="filters">' +
+        ["all|Tous", "stock|En stock", "deployed|En dépôt"].map((p) => {
+          const [val, label] = p.split("|");
+          return '<button class="filter-pill' + (state.statusFilter === val ? " active" : "") + '" onclick="setFilter(\'' + val + '\')">' + label + "</button>";
+        }).join("") +
+      "</div>"
+      ) : "") +
+    "</div>"
+  );
+}
+
+function renderForm() {
+  if (!state.showForm) return "";
+  const it = state.editingId ? state.items.find((x) => x.id === state.editingId) : null;
+  return (
+    '<div class="overlay" style="z-index:50">' +
+      '<div class="overlay-header"><button class="icon-btn" onclick="closeForm()">' + icon("x", 18) + '</button><h2 class="heading" style="font-size:17px">' + (it ? "Modifier l'appareil" : "Nouvel appareil") + "</h2></div>" +
+      '<div class="overlay-body">' +
+        '<label class="photo-picker" id="photo-preview">' +
+          (state.draftPhotoThumb ? '<img src="' + state.draftPhotoThumb + '">' : icon("camera", 22, "#5B5D53") + "<span>Ajouter une photo</span>") +
+          '<input type="file" accept="image/*" class="hidden-input" onchange="handlePhotoChange(this)">' +
+        "</label>" +
+        formField("f-name", "Nom", it ? it.name : "", "Ex. Fauteuil Oslo") +
+        formField("f-reference", "Référence / n° de série", it ? it.reference : "", "Ex. OSL-2024-014", true) +
+        formField("f-color", "Couleur", it ? it.color : "", "Ex. Terracotta") +
+        '<div class="field-grid" style="margin-bottom:0">' +
+          formField("f-width", "Largeur d'assise (cm)", it ? it.width : "", "45") +
+          formField("f-depth", "Profondeur (cm)", it ? it.depth : "", "50") +
+        "</div>" +
+        '<div class="form-field"><label>Notes / état</label><textarea id="f-notes" rows="3" placeholder="Rayure au pied gauche…">' + esc(it ? it.notes : "") + "</textarea></div>" +
+      "</div>" +
+      '<div class="overlay-footer"><button class="btn-primary btn-block" onclick="submitForm()">' + icon("check", 16, "#EEEBE3") + " " + (it ? "Enregistrer" : "Ajouter au parc") + "</button></div>" +
+    "</div>"
+  );
+}
+function formField(id, label, value, placeholder, mono) {
+  return '<div class="form-field"><label>' + label + '</label><input id="' + id + '" value="' + esc(value) + '" placeholder="' + placeholder + '"' + (mono ? ' class="mono"' : "") + "></div>";
+}
+
+function renderDetail() {
+  if (!state.detailId) return "";
+  const it = state.items.find((x) => x.id === state.detailId);
+  if (!it) return "";
+  const active = activeReservation(it);
+  const overdue = itemOverdue(it);
+  const upcoming = upcomingReservations(it);
+  let statusPanel = "";
+  if (active) {
+    statusPanel = '<div class="panel" style="' + (overdue ? "background:var(--alert-bg);border-color:var(--alert)" : "") + '">' +
+      '<div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;margin-bottom:4px' + (overdue ? ";color:var(--alert)" : "") + '">' + icon("pin", 14) + esc(active.store) + "</div>" +
+      '<div style="font-size:12px;color:' + (overdue ? "var(--alert)" : "var(--ink-soft)") + '">Déposé le ' + fmtDate(active.startDate) + " · " + daysSince(active.startDate) + " jours</div>" +
+      (active.endDate
+        ? '<div style="font-size:12px;font-weight:600;margin-top:4px;color:' + (overdue ? "var(--alert)" : "var(--ink-soft)") + '">' +
+            (overdue ? "Reprise prévue le " + fmtDate(active.endDate) + " — en retard de " + daysSince(active.endDate) + " j" : "Reprise prévue le " + fmtDate(active.endDate)) +
+          "</div>"
+        : "") +
+      "</div>";
+  }
+  if (upcoming.length > 0) {
+    statusPanel += '<div class="panel">' +
+      '<div class="panel-title">Réservations à venir</div>' +
+      upcoming.map((r) => '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<div style="font-size:13px">' + esc(r.store) + " · " + fmtDate(r.startDate) + " → " + (r.endDate ? fmtDate(r.endDate) : "?") + "</div>" +
+        '<button class="icon-btn" onclick="cancelReservation(\'' + it.id + "','" + r.id + '\')">' + icon("x", 15, "#A6493A") + "</button>" +
+      "</div>").join("") +
+      "</div>";
+  }
+
+  let actionBlock = "";
+  if (state.actionMode === null) {
+    if (active) {
+      actionBlock = '<button class="btn-primary btn-block" style="margin-bottom:18px" onclick="startAction(\'pickup\')">' + icon("swap", 16, "#EEEBE3") + " Enregistrer la récupération</button>";
+    } else {
+      actionBlock = '<div class="actions-row" style="margin-bottom:18px">' +
+        '<button class="btn-block" style="background:var(--deployed);color:#fff" onclick="startAction(\'deposit-now\')">' + icon("swap", 16, "#fff") + " Déposer maintenant</button>" +
+        '<button class="btn-outline btn-block" onclick="startAction(\'reserve-future\')">' + icon("calendar", 16) + " Réserver plus tard</button>" +
+      "</div>";
+    }
+  } else if (state.actionMode === "deposit-now" || state.actionMode === "reserve-future") {
+    actionBlock = '<div class="panel"><div class="panel-title">' + (state.actionMode === "deposit-now" ? "Déposer en magasin" : "Réserver pour plus tard") + "</div>" +
+      '<div class="form-field"><label>Magasin</label><input id="d-store" placeholder="Nom du magasin"></div>' +
+      '<div class="form-field"><label>Email du magasin (optionnel)</label><input id="d-email" type="email" placeholder="contact@magasin.fr"></div>' +
+      '<div class="form-field"><label>Date de début</label><input id="d-startdate" type="date"></div>' +
+      '<div class="form-field"><label>Date de fin prévue</label><input id="d-expected" type="date"></div>' +
+      '<div class="actions-row"><button class="btn-outline" onclick="cancelAction()">Annuler</button><button class="btn-block" style="background:var(--deployed);color:#fff" onclick="confirmReservation()">Confirmer</button></div>' +
+      "</div>";
+  } else if (state.actionMode === "pickup") {
+    actionBlock = '<div class="panel"><div class="panel-title">Récupérer chez ' + esc(active ? active.store : "") + "</div>" +
+      '<div class="form-field"><label>Date de récupération</label><input id="p-date" type="date"></div>' +
+      '<div class="actions-row"><button class="btn-outline" onclick="cancelAction()">Annuler</button><button class="btn-block" style="background:var(--stock);color:#fff" onclick="confirmPickup()">Confirmer</button></div>' +
+      "</div>";
+  } else if (state.actionMode === "deposit-done") {
+    const r = (it.reservations || []).find((x) => x.id === state._lastReservationId) || active;
+    actionBlock = '<div class="panel deposit-done">' +
+      '<div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;color:var(--stock);margin-bottom:10px">' + icon("check", 16, "#4B6C50") + " Enregistré chez " + esc(r ? r.store : "") + "</div>" +
+      (r && r.storeEmail ? '<a class="btn-block" style="background:var(--ink);color:var(--paper);margin-bottom:8px" href="' + esc(buildMailto(it, r)) + '">' + icon("mail", 15, "#EEEBE3") + " Envoyer les infos au magasin</a>" : "") +
+      (r ? '<a class="btn-block" style="border:1px solid var(--line);color:var(--ink);margin-bottom:8px" target="_blank" href="' + esc(buildGoogleCalendarLink(it, r)) + '">' + icon("calendar", 15) + " Ajouter à Google Agenda</a>" : "") +
+      (it.photoFull ? '<a class="btn-block" style="border:1px solid var(--line);color:var(--ink);margin-bottom:8px" href="' + it.photoFull + '" download="' + esc(it.name) + '.jpg">' + icon("dl", 15) + " Télécharger la photo</a>" : "") +
+      '<button class="btn-block" style="background:var(--stock);color:#fff" onclick="closeDetail()">Retour à l\'accueil</button>' +
+      "</div>";
+  }
+
+  const closedHistory = (it.reservations || []).filter((r) => r.pickupDate).slice().reverse();
+
+  return (
+    '<div class="overlay">' +
+      '<div class="overlay-header">' +
+        '<button class="back-btn" onclick="closeDetail()">' + icon("back", 20) + " Accueil</button>" +
+        '<h2 class="heading" style="font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.name) + "</h2>" +
+        '<button class="icon-btn" onclick="openEditForm(\'' + it.id + '\')">' + icon("pencil", 18) + "</button>" +
+        '<button class="icon-btn" onclick="handleDelete(\'' + it.id + '\')">' + icon("trash", 18, "#A6493A") + "</button>" +
+      "</div>" +
+      '<div class="overlay-body">' +
+        '<div class="photo-hero">' + (it.photoFull ? '<img src="' + it.photoFull + '">' : icon("box", 34, "#5B5D53")) + "</div>" +
+        '<span class="badge ' + (active ? "badge-deployed" : "badge-stock") + '" style="margin-bottom:12px;display:inline-block">' + (active ? "En dépôt" : "En stock") + "</span>" +
+        '<div class="field-grid">' +
+          field("Référence", it.reference, true) + field("Couleur", it.color) +
+          field("Largeur d'assise", it.width ? it.width + " cm" : "") + field("Profondeur", it.depth ? it.depth + " cm" : "") +
+        "</div>" +
+        (it.notes ? '<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px">Notes</div><div class="panel" style="margin-bottom:0">' + esc(it.notes) + "</div></div>" : "") +
+        statusPanel + actionBlock +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:5px;margin-bottom:8px">' + icon("clock", 13) + " Historique</div>" +
+        (closedHistory.length === 0 ? '<div style="font-size:13px;color:var(--ink-soft)">Aucun dépôt terminé pour l\'instant.</div>' :
+          closedHistory.map((h) => '<div class="history-item">' + icon("pin", 14, "#5B5D53") + '<div><div class="h-name">' + esc(h.store) + '</div><div class="h-dates mono">' + fmtDate(h.startDate) + " → " + fmtDate(h.pickupDate) + "</div></div></div>").join("")) +
+      "</div>" +
+    "</div>"
+  );
+}
+function field(label, value, mono) {
+  return '<div class="field"><label>' + label + '</label><div class="val' + (mono ? " mono" : "") + '">' + (value ? esc(value) : "—") + "</div></div>";
+}
+
+function render() {
+  document.getElementById("app").innerHTML =
+    (state.ready ? renderHeader() + (state.view === "parc" ? '<div class="list">' + renderGrid() + "</div>" : "") + (state.view === "reservations" ? renderReservationsTab() : "") : '<div class="empty">Chargement…</div>') +
+    renderDetail() + renderForm() + renderReserveForm() +
+    (state.toast ? '<div class="toast' + (state.toast.type === "error" ? " error" : "") + '">' + esc(state.toast.msg) + "</div>" : "");
+}
+
+/* ---------- Export / sauvegarde de secours ---------- */
+function exportBackup() {
+  const payload = { exportedAt: new Date().toISOString(), items: state.items };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "parc-demo-sauvegarde-" + todayStr() + ".json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  notify("Sauvegarde téléchargée.");
+}
+
+function importBackup(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      const items = (payload.items || payload.index || []).map(migrateItem);
+      if (!Array.isArray(items) || items.length === 0) { notify("Fichier de sauvegarde vide ou invalide.", "error"); return; }
+      persistItemsSync(items);
+      state.items = items;
+      render();
+      notify(items.length + " appareil(s) restauré(s).");
+    } catch (err) {
+      notify("Impossible de lire ce fichier.", "error");
+    } finally {
+      input.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+loadAll();
+</script>
+</body>
+</html>
